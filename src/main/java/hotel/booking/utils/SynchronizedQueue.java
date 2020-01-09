@@ -5,16 +5,12 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import java.util.AbstractQueue;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.Spliterator;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 
 public class SynchronizedQueue<T> extends AbstractQueue<T> implements BlockingQueue<T> {
@@ -54,6 +50,61 @@ public class SynchronizedQueue<T> extends AbstractQueue<T> implements BlockingQu
         last = head;
     }
 
+    void signalNotEmpty(){
+        popLock.lock();
+        notEmpty.signal();
+        popLock.unlock();
+    }
+
+    void signalNotFull(){
+        putLock.lock();
+        notFull.signal();
+        putLock.unlock();
+    }
+
+    private void addInQueue(Node<T> node){
+        last.next = node;
+        last = node;
+    }
+
+    private T popFromQueue(){
+        head = head.next;
+        return head.item;
+    }
+
+    @Override
+    public boolean offer(T t, long timeout, TimeUnit unit) throws InterruptedException {
+        if (t == null){
+            throw new NullPointerException();
+        }
+        if (count.get() == capacity){
+            return false;
+        }
+        int c = -1;
+        Node<T> node = new Node<>(t);
+        putLock.lock();
+        try{
+            if (count.get() == capacity){
+                if (timeout <= 0){
+                    return false;
+                }
+                notFull.await(timeout, unit);
+            }
+            addInQueue(node);
+            c = count.getAndIncrement();
+            if (c <= capacity){
+                notFull.signal();
+            }
+        }
+        finally {
+            putLock.unlock();
+        }
+        if (c == 0){
+            signalNotEmpty();
+        }
+        return c > -1;
+    }
+
     @Override
     public boolean offer(T t) {
         if (t == null){
@@ -67,8 +118,7 @@ public class SynchronizedQueue<T> extends AbstractQueue<T> implements BlockingQu
         putLock.lock();
         try{
             if (count.get() < capacity){
-                last.next = node;
-                last = node;
+                addInQueue(node);
                 c = count.getAndIncrement();
                 if (c <= capacity){
                     notFull.signal();
@@ -79,7 +129,7 @@ public class SynchronizedQueue<T> extends AbstractQueue<T> implements BlockingQu
             putLock.unlock();
         }
         if (c == 0){
-            notEmpty.signal();
+            signalNotEmpty();
         }
         return c > -1;
     }
@@ -96,8 +146,7 @@ public class SynchronizedQueue<T> extends AbstractQueue<T> implements BlockingQu
             if (count.get() == capacity){
                 notFull.await();
             }
-            last.next = node;
-            last = node;
+            addInQueue(node);
             c = count.getAndIncrement();
             if (c <= capacity){
                 notFull.signal();
@@ -107,34 +156,100 @@ public class SynchronizedQueue<T> extends AbstractQueue<T> implements BlockingQu
             putLock.unlock();
         }
         if (c == 0){
-            popLock.lock();
-            notEmpty.signal();
-            popLock.unlock();
+            signalNotEmpty();
         }
     }
 
     @Override
-    public boolean offer(T t, long timeout, TimeUnit unit) throws InterruptedException {
-        return false;
+    public T poll(long timeout, TimeUnit unit) throws InterruptedException {
+        int c = -1;
+        putLock.lock();
+        T item = null;
+        try{
+            if (count.get() == 0){
+                if (timeout <= 0){
+                    return null;
+                }
+                notFull.await(timeout, unit);
+            }
+            item = popFromQueue();
+            c = count.getAndDecrement();
+            if (c > 1){
+                notEmpty.signal();
+            }
+        }
+        finally {
+            putLock.unlock();
+        }
+        if (c == capacity){
+            signalNotFull();
+        }
+        return item;
     }
 
     @Override
     public T poll() {
-        return null;
+        int c = -1;
+        putLock.lock();
+        T item = null;
+        try{
+            if (count.get() == 0) {
+                item = popFromQueue();
+                c = count.getAndDecrement();
+                if (c > 1) {
+                    notEmpty.signal();
+                }
+            }
+        }
+        finally {
+            putLock.unlock();
+        }
+        if (c == capacity){
+            signalNotFull();
+        }
+        return item;
+    }
+
+    @Override
+    public T take() throws InterruptedException {
+        int c = -1;
+        putLock.lock();
+        T item = null;
+        try{
+            if (count.get() == 0){
+                notFull.await();
+            }
+            item = popFromQueue();
+            c = count.getAndDecrement();
+            if (c > 1){
+                notEmpty.signal();
+            }
+        }
+        finally {
+            putLock.unlock();
+        }
+        if (c == capacity){
+            signalNotFull();
+        }
+        return item;
     }
 
     @Override
     public T peek() {
-        return null;
-    }
-    @Override
-    public T take() throws InterruptedException {
-        return null;
-    }
-
-    @Override
-    public T poll(long timeout, TimeUnit unit) throws InterruptedException {
-        return null;
+        if (count.get() == 0){
+            return null;
+        }
+        popLock.lock();
+        try{
+            Node<T> first = head.next;
+            if (first == null)
+                return null;
+            else
+                return first.item;
+        }
+        finally {
+            popLock.unlock();
+        }
     }
 
     @Override
@@ -149,7 +264,7 @@ public class SynchronizedQueue<T> extends AbstractQueue<T> implements BlockingQu
 
     @Override
     public Iterator<T> iterator() {
-        return null;
+        throw new NotImplementedException();
     }
 
     @Override
