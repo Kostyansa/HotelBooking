@@ -135,7 +135,7 @@ public class SynchronizedQueue<T> extends AbstractQueue<T> implements BlockingQu
     }
 
     @Override
-    public void put(T t) throws InterruptedException {
+    public void put(T t) {
         if (t == null){
             throw new NullPointerException();
         }
@@ -143,8 +143,8 @@ public class SynchronizedQueue<T> extends AbstractQueue<T> implements BlockingQu
         Node<T> node = new Node<>(t);
         putLock.lock();
         try{
-            if (count.get() == capacity){
-                notFull.await();
+            while (count.get() == capacity){
+                notFull.awaitUninterruptibly();
             }
             addInQueue(node);
             c = count.getAndIncrement();
@@ -163,14 +163,14 @@ public class SynchronizedQueue<T> extends AbstractQueue<T> implements BlockingQu
     @Override
     public T poll(long timeout, TimeUnit unit) throws InterruptedException {
         int c = -1;
-        putLock.lock();
+        popLock.lock();
         T item = null;
         try{
             if (count.get() == 0){
                 if (timeout <= 0){
                     return null;
                 }
-                notFull.await(timeout, unit);
+                notEmpty.await(timeout, unit);
             }
             item = popFromQueue();
             c = count.getAndDecrement();
@@ -179,7 +179,7 @@ public class SynchronizedQueue<T> extends AbstractQueue<T> implements BlockingQu
             }
         }
         finally {
-            putLock.unlock();
+            popLock.unlock();
         }
         if (c == capacity){
             signalNotFull();
@@ -190,10 +190,10 @@ public class SynchronizedQueue<T> extends AbstractQueue<T> implements BlockingQu
     @Override
     public T poll() {
         int c = -1;
-        putLock.lock();
+        popLock.lock();
         T item = null;
         try{
-            if (count.get() == 0) {
+            if (count.get() != 0) {
                 item = popFromQueue();
                 c = count.getAndDecrement();
                 if (c > 1) {
@@ -202,7 +202,7 @@ public class SynchronizedQueue<T> extends AbstractQueue<T> implements BlockingQu
             }
         }
         finally {
-            putLock.unlock();
+            popLock.unlock();
         }
         if (c == capacity){
             signalNotFull();
@@ -211,13 +211,13 @@ public class SynchronizedQueue<T> extends AbstractQueue<T> implements BlockingQu
     }
 
     @Override
-    public T take() throws InterruptedException {
+    public T take() {
         int c = -1;
-        putLock.lock();
+        popLock.lock();
         T item = null;
         try{
-            if (count.get() == 0){
-                notFull.await();
+            while (count.get() == 0){
+                notEmpty.awaitUninterruptibly();
             }
             item = popFromQueue();
             c = count.getAndDecrement();
@@ -226,7 +226,7 @@ public class SynchronizedQueue<T> extends AbstractQueue<T> implements BlockingQu
             }
         }
         finally {
-            putLock.unlock();
+            popLock.unlock();
         }
         if (c == capacity){
             signalNotFull();
