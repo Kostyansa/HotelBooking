@@ -6,12 +6,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
 
-public class Consumer {
+public class Consumer extends Thread {
     private static final Logger logger = LoggerFactory.getLogger(Consumer.class);
+
+    private static final long pingPeriod = 1000;
 
     private final SynchronizedQueue<BookingRequest> requests;
 
@@ -22,15 +21,18 @@ public class Consumer {
         this.timeout = timeout;
     }
 
-    public void consume() {
-        boolean isTimeoutEnded = false;
-        BookingRequest bookingRequest = null;
+    @Override
+    public void run() {
         try {
+            boolean isTimeoutEnded = false;
             while ((!requests.isEmpty()) || !isTimeoutEnded) {
-                bookingRequest = requests.poll();
+                BookingRequest bookingRequest = requests.poll();
                 if (bookingRequest == null) {
-                    Thread.sleep(timeout.toMillis());
-                    bookingRequest = requests.poll();
+                    int i = 0;
+                    while((bookingRequest == null) && (i++ < (timeout.toMillis()/pingPeriod + 1))) {
+                        Thread.sleep(pingPeriod);
+                        bookingRequest = requests.poll();
+                    }
                     if (bookingRequest == null) {
                         isTimeoutEnded = true;
                     }

@@ -8,11 +8,11 @@ public class Main {
 
     public static void main(String[] args) {
         HotelService hotelService = new HotelService(
-                100,
-                200,
                 30,
-                300,
-                Duration.ofMillis(5000));
+                20,
+                5,
+                100,
+                Duration.ofMillis(2500));
         hotelService.startProcessing();
     }
 }

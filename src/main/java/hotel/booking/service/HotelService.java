@@ -55,15 +55,11 @@ public class HotelService {
         logger.debug("Started initializing threads");
         for (int i = 0; i < producerThreadsCount; i++) {
             Producer producer = new Producer(requests, countProduced, requestsToGenerate);
-            Thread thread = new Thread((producer::produce));
-            thread.setDaemon(true);
-            producerThreads.add(thread);
+            producerThreads.add(producer);
         }
         for (int i = 0; i < consumerThreadsCount; i++) {
             Consumer consumer = new Consumer(requests, timeout);
-            Thread thread = new Thread((consumer::consume));
-            thread.setDaemon(true);
-            consumerThreads.add(thread);
+            consumerThreads.add(consumer);
         }
     }
 

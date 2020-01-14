@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class Producer {
+public class Producer extends Thread {
     private static final Logger logger = LoggerFactory.getLogger(Producer.class);
 
     private final SynchronizedQueue<BookingRequest> requests;
@@ -25,12 +25,13 @@ public class Producer {
         this.requestsToGenerate = requestsToGenerate;
     }
 
-    public void produce(){
+    @Override
+    public void run(){
         while (count.getAndIncrement() < requestsToGenerate) {
             BookingRequest bookingRequest = RandomizedBookingTicketGenerator.newRandomBookingRequest();
             requests.put(bookingRequest);
             logger.debug(String.format("Producer: %s, sent %s", this.toString(), bookingRequest.toString()));
         }
-        logger.debug(String.format("Producer: %s, cannot generate more requests", this.toString()));
+        logger.debug(String.format("Producer: %s, cannot generate more requests and will be terminated", this.toString()));
     }
 }
