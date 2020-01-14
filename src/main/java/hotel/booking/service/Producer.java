@@ -17,13 +17,16 @@ public class Producer {
 
     private final AtomicInteger count;
 
-    public Producer(SynchronizedQueue<BookingRequest> requests, AtomicInteger count) {
+    private final int requestsToGenerate;
+
+    public Producer(SynchronizedQueue<BookingRequest> requests, AtomicInteger count, int requestsToGenerate) {
         this.requests = requests;
         this.count = count;
+        this.requestsToGenerate = requestsToGenerate;
     }
 
     public void produce(){
-        while (count.getAndIncrement() < HotelService.generateRequests) {
+        while (count.getAndIncrement() < requestsToGenerate) {
             BookingRequest bookingRequest = RandomizedBookingTicketGenerator.newRandomBookingRequest();
             requests.put(bookingRequest);
             logger.debug(String.format("Producer: %s, sent %s", this.toString(), bookingRequest.toString()));
