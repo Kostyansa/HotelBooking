@@ -31,6 +31,15 @@ public class HotelService {
     private final List<Thread> consumerThreads = new LinkedList<>();
 
     public HotelService(int producerThreadsCount, int consumerThreadsCount, int queueSize, int requestsToGenerate, Duration timeout) {
+        if (consumerThreadsCount < 1){
+            throw new IllegalArgumentException("There must be at least one Consumer Thread");
+        }
+        if (requestsToGenerate < 0){
+            throw new IllegalArgumentException("Amount of the request to generate should be positive or zero");
+        }
+        if (timeout.isNegative()){
+            throw new IllegalArgumentException("Timeout must be positive or zero");
+        }
         this.producerThreadsCount = producerThreadsCount;
         this.consumerThreadsCount = consumerThreadsCount;
         this.requestsToGenerate = requestsToGenerate;
@@ -46,11 +55,15 @@ public class HotelService {
         logger.debug("Started initializing threads");
         for (int i = 0; i < producerThreadsCount; i++) {
             Producer producer = new Producer(requests, countProduced, requestsToGenerate);
-            producerThreads.add(new Thread((producer::produce)));
+            Thread thread = new Thread((producer::produce));
+            thread.setDaemon(true);
+            producerThreads.add(thread);
         }
         for (int i = 0; i < consumerThreadsCount; i++) {
             Consumer consumer = new Consumer(requests, timeout);
-            consumerThreads.add(new Thread(consumer::consume));
+            Thread thread = new Thread((consumer::consume));
+            thread.setDaemon(true);
+            consumerThreads.add(thread);
         }
     }
 
@@ -80,7 +93,7 @@ public class HotelService {
                 thread.join();
             } catch (InterruptedException e) {
                 e.printStackTrace();
-                logger.error("Producer thread has been interrupted", e);
+                logger.error("Consumer thread has been interrupted", e);
             }
         }
     }
