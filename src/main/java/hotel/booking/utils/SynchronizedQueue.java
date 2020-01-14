@@ -2,18 +2,16 @@ package hotel.booking.utils;
 
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-import java.util.AbstractQueue;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 
-public class SynchronizedQueue<T> extends AbstractQueue<T> implements BlockingQueue<T> {
+public class SynchronizedQueue<T> implements BlockingQueue<T> {
 
     static class Node<T>{
         T item;
@@ -135,6 +133,11 @@ public class SynchronizedQueue<T> extends AbstractQueue<T> implements BlockingQu
     }
 
     @Override
+    public T remove() {
+        return null;
+    }
+
+    @Override
     public void put(T t) {
         if (t == null){
             throw new NullPointerException();
@@ -158,6 +161,35 @@ public class SynchronizedQueue<T> extends AbstractQueue<T> implements BlockingQu
         if (c == 0){
             signalNotEmpty();
         }
+    }
+
+    @Override
+    public boolean add(T t) {
+        if (t == null){
+            throw new NullPointerException();
+        }
+        int c = -1;
+        Node<T> node = new Node<>(t);
+        putLock.lock();
+        try{
+            if (count.get() < capacity){
+                addInQueue(node);
+                c = count.getAndIncrement();
+                if (c <= capacity){
+                    notFull.signal();
+                }
+            }
+            else{
+                throw new IllegalStateException("Queue is full");
+            }
+        }
+        finally {
+            putLock.unlock();
+        }
+        if (c == 0){
+            signalNotEmpty();
+        }
+        return true;
     }
 
     @Override
@@ -211,6 +243,11 @@ public class SynchronizedQueue<T> extends AbstractQueue<T> implements BlockingQu
     }
 
     @Override
+    public T element() {
+        return null;
+    }
+
+    @Override
     public T take() {
         int c = -1;
         popLock.lock();
@@ -258,12 +295,62 @@ public class SynchronizedQueue<T> extends AbstractQueue<T> implements BlockingQu
     }
 
     @Override
+    public boolean remove(Object o) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public boolean containsAll(Collection<?> c) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public boolean addAll(Collection<? extends T> c) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public boolean removeAll(Collection<?> c) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public boolean retainAll(Collection<?> c) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void clear() {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public boolean contains(Object o) {
+        throw new NotImplementedException();
+    }
+
+    @Override
     public int size() {
         return count.get();
     }
 
     @Override
+    public boolean isEmpty() {
+        return count.get() == 0;
+    }
+
+    @Override
     public Iterator<T> iterator() {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public Object[] toArray() {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public <T1> T1[] toArray(T1[] a) {
         throw new NotImplementedException();
     }
 
