@@ -47,10 +47,6 @@ public class HotelService {
         requests = new SynchronizedQueue<>(queueSize);
     }
 
-    public HotelService() {
-        this(6, 3, 5, 15, Duration.ofSeconds(1));
-    }
-
     private void initializeThreads() {
         logger.debug("Started initializing threads");
         for (int i = 0; i < producerThreadsCount; i++) {
@@ -76,7 +72,6 @@ public class HotelService {
         initializeThreads();
         startThreads();
         for (Thread thread : producerThreads){
-
             try {
                 thread.join();
             } catch (InterruptedException e) {

@@ -7,12 +7,5 @@ import java.time.Duration;
 public class Main {
 
     public static void main(String[] args) {
-        HotelService hotelService = new HotelService(
-                30,
-                20,
-                5,
-                100,
-                Duration.ofMillis(2500));
-        hotelService.startProcessing();
     }
 }
