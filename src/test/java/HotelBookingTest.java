@@ -73,9 +73,9 @@ public class HotelBookingTest {
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
             HotelService hotelService = new HotelService(
                     100,
-                    100,
-                    5,
                     0,
+                    5,
+                    100,
                     Duration.ofMillis(-1000));
             hotelService.startProcessing();
         });
