@@ -6,16 +6,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class RandomizedBookingTicketGenerator {
-
-    private static final Logger logger = LoggerFactory.getLogger(RandomizedBookingTicketGenerator.class);
 
     static final AtomicInteger count = new AtomicInteger();
 
@@ -32,10 +27,10 @@ public class RandomizedBookingTicketGenerator {
             "Anna Frank",
             "Marie Curie",
             "Ivan Petrov"
-            ));
+    ));
 
 
-    static ArrayList<String> hotels = new ArrayList<>(Arrays.asList(
+    static List<String> hotels = Arrays.asList(
             "Grand Budapest",
             "Test Hotel 4",
             "Test Hotel 1",
@@ -43,9 +38,9 @@ public class RandomizedBookingTicketGenerator {
             "Test Hotel 16",
             "Test Hotel 3",
             "Test Hotel 2"
-    ));
+    );
 
-    static public BookingRequest newRandomBookingRequest(){
+    static public BookingRequest newRandomBookingRequest() {
         int namesIndex;
         int hotelsIndex;
         int days;
@@ -54,10 +49,9 @@ public class RandomizedBookingTicketGenerator {
         try {
             namesIndex = random.nextInt(names.size());
             hotelsIndex = random.nextInt(hotels.size());
-            days = random.nextInt()%30;
+            days = random.nextInt() % 30;
             id = count.getAndIncrement();
-        }
-        finally {
+        } finally {
             randomLock.unlock();
         }
         return new BookingRequest(
@@ -65,7 +59,7 @@ public class RandomizedBookingTicketGenerator {
                 LocalDate.now().plusDays(days),
                 hotels.get(hotelsIndex),
                 names.get(namesIndex)
-                );
+        );
     }
 
 }

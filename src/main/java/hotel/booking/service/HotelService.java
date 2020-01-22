@@ -31,13 +31,13 @@ public class HotelService {
     private final List<Thread> consumerThreads = new LinkedList<>();
 
     public HotelService(int producerThreadsCount, int consumerThreadsCount, int queueSize, int requestsToGenerate, Duration timeout) {
-        if (consumerThreadsCount < 1){
+        if (consumerThreadsCount < 1) {
             throw new IllegalArgumentException("There must be at least one Consumer Thread");
         }
-        if (requestsToGenerate < 0){
+        if (requestsToGenerate < 0) {
             throw new IllegalArgumentException("Amount of the request to generate should be positive or zero");
         }
-        if (timeout.isNegative()){
+        if (timeout.isNegative()) {
             throw new IllegalArgumentException("Timeout must be positive or zero");
         }
         this.producerThreadsCount = producerThreadsCount;
@@ -71,19 +71,19 @@ public class HotelService {
     public void startProcessing() {
         initializeThreads();
         startThreads();
-        for (Thread thread : producerThreads){
+        for (Thread thread : producerThreads) {
             try {
                 thread.join();
             } catch (InterruptedException e) {
-                e.printStackTrace();
+
                 logger.error("Producer thread has been interrupted", e);
             }
         }
-        for (Thread thread : consumerThreads){
+        for (Thread thread : consumerThreads) {
             try {
                 thread.join();
             } catch (InterruptedException e) {
-                e.printStackTrace();
+
                 logger.error("Consumer thread has been interrupted", e);
             }
         }

@@ -13,12 +13,12 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class SynchronizedQueue<T> implements BlockingQueue<T> {
 
-    static class Node<T>{
+    static class Node<T> {
         T item;
 
         Node<T> next;
 
-        Node(T item){
+        Node(T item) {
             this.item = item;
         }
     }
@@ -40,7 +40,7 @@ public class SynchronizedQueue<T> implements BlockingQueue<T> {
     private final Condition notFull = putLock.newCondition();
 
     public SynchronizedQueue(int capacity) {
-        if (capacity <= 0){
+        if (capacity <= 0) {
             throw new IllegalArgumentException("Capacity must be positive");
         }
         this.capacity = capacity;
@@ -48,56 +48,55 @@ public class SynchronizedQueue<T> implements BlockingQueue<T> {
         last = head;
     }
 
-    void signalNotEmpty(){
+    void signalNotEmpty() {
         popLock.lock();
         notEmpty.signal();
         popLock.unlock();
     }
 
-    void signalNotFull(){
+    void signalNotFull() {
         putLock.lock();
         notFull.signal();
         putLock.unlock();
     }
 
-    private void addInQueue(Node<T> node){
+    private void addInQueue(Node<T> node) {
         last.next = node;
         last = node;
     }
 
-    private T popFromQueue(){
+    private T popFromQueue() {
         head = head.next;
         return head.item;
     }
 
     @Override
     public boolean offer(T t, long timeout, TimeUnit unit) throws InterruptedException {
-        if (t == null){
+        if (t == null) {
             throw new NullPointerException();
         }
-        if (count.get() == capacity){
+        if (count.get() == capacity) {
             return false;
         }
         int c = -1;
         Node<T> node = new Node<>(t);
         putLock.lock();
-        try{
-            if (count.get() == capacity){
-                if (timeout <= 0){
+        try {
+            if (count.get() == capacity) {
+                if (timeout <= 0) {
                     return false;
                 }
                 notFull.await(timeout, unit);
             }
             addInQueue(node);
             c = count.getAndIncrement();
-            if (c <= capacity){
+            if (c <= capacity) {
                 notFull.signal();
             }
-        }
-        finally {
+        } finally {
             putLock.unlock();
         }
-        if (c == 0){
+        if (c == 0) {
             signalNotEmpty();
         }
         return c > -1;
@@ -105,28 +104,27 @@ public class SynchronizedQueue<T> implements BlockingQueue<T> {
 
     @Override
     public boolean offer(T t) {
-        if (t == null){
+        if (t == null) {
             throw new NullPointerException();
         }
-        if (count.get() == capacity){
+        if (count.get() == capacity) {
             return false;
         }
         int c = -1;
         Node<T> node = new Node<>(t);
         putLock.lock();
-        try{
-            if (count.get() < capacity){
+        try {
+            if (count.get() < capacity) {
                 addInQueue(node);
                 c = count.getAndIncrement();
-                if (c <= capacity){
+                if (c <= capacity) {
                     notFull.signal();
                 }
             }
-        }
-        finally {
+        } finally {
             putLock.unlock();
         }
-        if (c == 0){
+        if (c == 0) {
             signalNotEmpty();
         }
         return c > -1;
@@ -139,54 +137,51 @@ public class SynchronizedQueue<T> implements BlockingQueue<T> {
 
     @Override
     public void put(T t) {
-        if (t == null){
+        if (t == null) {
             throw new NullPointerException();
         }
         int c = -1;
         Node<T> node = new Node<>(t);
         putLock.lock();
-        try{
-            while (count.get() == capacity){
+        try {
+            while (count.get() == capacity) {
                 notFull.awaitUninterruptibly();
             }
             addInQueue(node);
             c = count.getAndIncrement();
-            if (c <= capacity){
+            if (c <= capacity) {
                 notFull.signal();
             }
-        }
-        finally {
+        } finally {
             putLock.unlock();
         }
-        if (c == 0){
+        if (c == 0) {
             signalNotEmpty();
         }
     }
 
     @Override
     public boolean add(T t) {
-        if (t == null){
+        if (t == null) {
             throw new NullPointerException();
         }
         int c = -1;
         Node<T> node = new Node<>(t);
         putLock.lock();
-        try{
-            if (count.get() < capacity){
+        try {
+            if (count.get() < capacity) {
                 addInQueue(node);
                 c = count.getAndIncrement();
-                if (c <= capacity){
+                if (c <= capacity) {
                     notFull.signal();
                 }
-            }
-            else{
+            } else {
                 throw new IllegalStateException("Queue is full");
             }
-        }
-        finally {
+        } finally {
             putLock.unlock();
         }
-        if (c == 0){
+        if (c == 0) {
             signalNotEmpty();
         }
         return true;
@@ -197,23 +192,22 @@ public class SynchronizedQueue<T> implements BlockingQueue<T> {
         int c = -1;
         popLock.lock();
         T item = null;
-        try{
-            if (count.get() == 0){
-                if (timeout <= 0){
+        try {
+            if (count.get() == 0) {
+                if (timeout <= 0) {
                     return null;
                 }
                 notEmpty.await(timeout, unit);
             }
             item = popFromQueue();
             c = count.getAndDecrement();
-            if (c > 1){
+            if (c > 1) {
                 notEmpty.signal();
             }
-        }
-        finally {
+        } finally {
             popLock.unlock();
         }
-        if (c == capacity){
+        if (c == capacity) {
             signalNotFull();
         }
         return item;
@@ -224,7 +218,7 @@ public class SynchronizedQueue<T> implements BlockingQueue<T> {
         int c = -1;
         popLock.lock();
         T item = null;
-        try{
+        try {
             if (count.get() != 0) {
                 item = popFromQueue();
                 c = count.getAndDecrement();
@@ -232,11 +226,10 @@ public class SynchronizedQueue<T> implements BlockingQueue<T> {
                     notEmpty.signal();
                 }
             }
-        }
-        finally {
+        } finally {
             popLock.unlock();
         }
-        if (c == capacity){
+        if (c == capacity) {
             signalNotFull();
         }
         return item;
@@ -252,20 +245,19 @@ public class SynchronizedQueue<T> implements BlockingQueue<T> {
         int c = -1;
         popLock.lock();
         T item = null;
-        try{
-            while (count.get() == 0){
+        try {
+            while (count.get() == 0) {
                 notEmpty.awaitUninterruptibly();
             }
             item = popFromQueue();
             c = count.getAndDecrement();
-            if (c > 1){
+            if (c > 1) {
                 notEmpty.signal();
             }
-        }
-        finally {
+        } finally {
             popLock.unlock();
         }
-        if (c == capacity){
+        if (c == capacity) {
             signalNotFull();
         }
         return item;
@@ -273,18 +265,17 @@ public class SynchronizedQueue<T> implements BlockingQueue<T> {
 
     @Override
     public T peek() {
-        if (count.get() == 0){
+        if (count.get() == 0) {
             return null;
         }
         popLock.lock();
-        try{
+        try {
             Node<T> first = head.next;
             if (first == null)
                 return null;
             else
                 return first.item;
-        }
-        finally {
+        } finally {
             popLock.unlock();
         }
     }

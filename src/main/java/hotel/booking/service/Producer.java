@@ -28,7 +28,7 @@ public class Producer extends Thread {
         while (count.getAndIncrement() < requestsToGenerate) {
             BookingRequest bookingRequest = RandomizedBookingTicketGenerator.newRandomBookingRequest();
             requests.put(bookingRequest);
-            logger.debug(String.format("Producer: %s, sent %s", this.toString(), bookingRequest.toString()));
+            logger.debug("Producer: {}, sent {}", this, bookingRequest);
         }
         logger.debug(String.format("Producer: %s, cannot generate more requests and will be terminated", this.toString()));
     }

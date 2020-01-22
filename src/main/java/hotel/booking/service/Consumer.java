@@ -25,7 +25,7 @@ public class Consumer extends Thread {
     public void run() {
         try {
             boolean isTimeoutEnded = false;
-            while ((!requests.isEmpty()) || !isTimeoutEnded) {
+            while (!requests.isEmpty() || !isTimeoutEnded) {
                 BookingRequest bookingRequest = requests.poll();
                 if (bookingRequest == null) {
                     int i = 0;
